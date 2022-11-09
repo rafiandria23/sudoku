@@ -3,8 +3,15 @@ import {setupListeners} from '@reduxjs/toolkit/query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {persistReducer, persistStore} from 'redux-persist';
 
-// APIs
-import {SudokuAPI} from '@/api';
+// Queries
+import {
+  reducerPath as queryReducerPath,
+  reducer as queryReducer,
+  middleware as queryMiddleware,
+} from '@/redux/queries';
+
+// Slices
+import gameReducer from '@/redux/slices';
 
 const persistedReducer = persistReducer(
   {
@@ -12,7 +19,8 @@ const persistedReducer = persistReducer(
     storage: AsyncStorage,
   },
   combineReducers({
-    [SudokuAPI.reducerPath]: SudokuAPI.reducer,
+    [queryReducerPath]: queryReducer,
+    game: gameReducer,
   }),
 );
 
@@ -20,14 +28,26 @@ const store = configureStore({
   devTools: __DEV__,
   reducer: persistedReducer,
   middleware(getDefaultMiddleware) {
-    return getDefaultMiddleware({
+    const middlewares = getDefaultMiddleware({
       serializableCheck: false,
-    }).concat(SudokuAPI.middleware);
+    });
+
+    middlewares.push(queryMiddleware);
+
+    if (__DEV__) {
+      const createDebugger = require('redux-flipper').default;
+      middlewares.push(createDebugger());
+    }
+
+    return middlewares;
   },
 });
 
 export const persistor = persistStore(store);
 
 setupListeners(store.dispatch);
+
+export type Dispatch = typeof store['dispatch'];
+export type RootState = ReturnType<typeof store['getState']>;
 
 export default store;

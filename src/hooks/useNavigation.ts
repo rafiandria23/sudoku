@@ -1,17 +1,11 @@
 import {useNavigation as useReactNavigation} from '@react-navigation/native';
 import {NativeStackNavigationProp} from '@react-navigation/native-stack';
 
-// Screen Route Params
-import type {GameScreenRouteParams} from '@/screens/GameScreen';
+// Types
+import type {RootStackParams} from '@/types';
 
-export type RootStackParams = {
-  '/play/new': GameScreenRouteParams;
-};
-
-function useNavigation() {
-  return useReactNavigation<
-    NativeStackNavigationProp<RootStackParams, keyof RootStackParams>
-  >();
+function useNavigation<K extends keyof RootStackParams>() {
+  return useReactNavigation<NativeStackNavigationProp<RootStackParams, K>>();
 }
 
 export default useNavigation;

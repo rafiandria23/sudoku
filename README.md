@@ -1,2 +1,3 @@
-# sudoku
-Simple Sudoku for iOS and Android
+# Sudoku
+
+Simple Sudoku for iOS and Android.

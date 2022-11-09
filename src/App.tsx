@@ -6,7 +6,7 @@ import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
 // Redux
-import store from './redux';
+import store from './redux/store';
 
 // Styles
 import {
@@ -16,7 +16,7 @@ import {
 } from './styles/theme';
 
 // Screens
-import {HomeScreen} from './screens';
+import {HomeScreen, GameScreen} from './screens';
 
 const Stack = createNativeStackNavigator();
 
@@ -30,15 +30,16 @@ const App: FC = () => {
           theme={
             colorScheme === 'light' ? lightNavigationTheme : darkNavigationTheme
           }>
-          <Stack.Navigator initialRouteName="/">
+          <Stack.Navigator initialRouteName="Home">
             {/* Main Screens */}
             <Stack.Screen
-              name="/"
+              name="Home"
               component={HomeScreen}
               options={{headerShown: false}}
             />
 
             {/* Play Screens */}
+            <Stack.Screen name="Game" component={GameScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </NativeBaseProvider>

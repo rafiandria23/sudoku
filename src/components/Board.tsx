@@ -1,30 +1,41 @@
-import React, {useEffect, useCallback, useMemo} from 'react';
+import React, {FC, useEffect} from 'react';
 import {TextInput, View, StyleSheet, Animated, Alert} from 'react-native';
+
+// Types
+import type {Game} from '@/types';
 
 // Utils
 import {increaseDouble, repeatRandomColors} from '@/utils';
 
-export default ({board}) => {
-  const animatedValue = useMemo(() => new Animated.Value(0), []);
+export interface BoardProps {
+  board: Game['board'];
+}
 
+const animatedValue = new Animated.Value(0);
+
+const Board: FC<BoardProps> = ({board}) => {
   const backgroundColorConfig = animatedValue.interpolate({
     inputRange: increaseDouble(1, 2),
     outputRange: repeatRandomColors(6),
   });
 
-  const startBackgroundColorAnimation = useCallback(() => {
+  const startBackgroundColorAnimation = () => {
     Animated.loop(
       Animated.timing(animatedValue, {
-        useNativeDriver: true,
         toValue: 1,
         duration: 15000,
+        useNativeDriver: false,
       }),
     ).start();
-  }, [animatedValue]);
+  };
 
   useEffect(() => {
     startBackgroundColorAnimation();
-  }, [startBackgroundColorAnimation]);
+  }, []);
+
+  useEffect(() => {
+    startBackgroundColorAnimation();
+  }, [board]);
 
   const handleNumberChange = (text: string, coordinate: any) => {
     const nums = '123456789';
@@ -42,10 +53,10 @@ export default ({board}) => {
         if (text.length > 1) {
           Alert.alert('Please enter a number between 1-9!');
         } else if (!nums.includes(text)) {
-          Alert.alert('Please enter number type only!');
+          Alert.prompt('Please enter number type only!');
         } else {
           const boardToChange = [...board];
-          boardToChange[coordinate[0]][coordinate[1]].val = text;
+          boardToChange[coordinate[0]][coordinate[1]].value = Number(text);
         }
         break;
     }
@@ -57,7 +68,7 @@ export default ({board}) => {
       indexKey++;
       const columns = row.map((col, colIdx) => {
         indexKey++;
-        if (col.length > 0) {
+        if (col.value > 0) {
           return (
             <Animated.View
               key={indexKey}
@@ -67,9 +78,9 @@ export default ({board}) => {
                   handleNumberChange(text, [rowIdx, colIdx])
                 }
                 style={styles.boardItemFilled}
-                value={col.val}
+                value={String(col.value)}
                 keyboardType="number-pad"
-                editable={col.canChange}
+                editable={col.editable}
               />
             </Animated.View>
           );
@@ -79,13 +90,13 @@ export default ({board}) => {
               key={indexKey}
               onChangeText={text => handleNumberChange(text, [rowIdx, colIdx])}
               style={styles.boardItem}
-              value={col.val}
               keyboardType="number-pad"
-              editable={col.canChange}
+              editable={col.editable}
             />
           );
         }
       });
+
       return (
         <View key={indexKey} style={styles.boardContainer}>
           {columns}
@@ -97,6 +108,8 @@ export default ({board}) => {
 
   return <View>{renderBoard()}</View>;
 };
+
+export default Board;
 
 const styles = StyleSheet.create({
   boardItem: {
