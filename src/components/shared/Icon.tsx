@@ -8,9 +8,10 @@ import Ionicon from 'react-native-vector-icons/Ionicons';
 
 export interface IconProps extends Omit<NativeBaseIconProps, 'as'> {
   focused?: boolean;
+  sharp?: boolean;
 }
 
-const Icon: FC<IconProps> = ({focused, name, ...rest}) => {
+const Icon: FC<IconProps> = ({focused, sharp, name, ...rest}) => {
   const iconName = useMemo(() => {
     let finalName = '';
 
@@ -28,12 +29,12 @@ const Icon: FC<IconProps> = ({focused, name, ...rest}) => {
         break;
     }
 
-    if (focused) {
+    if (focused || sharp) {
       finalName = finalName.replace('outline', 'sharp');
     }
 
     return finalName;
-  }, [name, focused]);
+  }, [focused, sharp, name]);
 
   return <NativeBaseIcon as={Ionicon} name={iconName} {...rest} />;
 };

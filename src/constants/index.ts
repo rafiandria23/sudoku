@@ -1,3 +1,5 @@
+import {Dimensions} from 'react-native';
+
 export enum GameDifficulty {
   EASY = 'easy',
   MEDIUM = 'medium',
@@ -14,3 +16,7 @@ export enum GameStatus {
 export enum Tag {
   BOARD = 'Board',
 }
+
+export const BoardConstant = {
+  CellSize: Math.round(Dimensions.get('window').width / 10),
+};

@@ -1,146 +1,118 @@
-import React, {FC, useEffect} from 'react';
-import {TextInput, View, StyleSheet, Animated, Alert} from 'react-native';
+import React, {FC, memo, useCallback} from 'react';
+import {Alert, Keyboard} from 'react-native';
+import {VStack, HStack, Input} from 'native-base';
+import update from 'immutability-helper';
 
 // Types
 import type {Game} from '@/types';
 
-// Utils
-import {increaseDouble, repeatRandomColors} from '@/utils';
+// Constants
+import {BoardConstant} from '@/constants';
 
 export interface BoardProps {
   board: Game['board'];
+  onChange(board: Game['board']): void | Promise<void>;
 }
 
-const animatedValue = new Animated.Value(0);
+const Board: FC<BoardProps> = ({board, onChange}) => {
+  const handleChange = useCallback(
+    (text: string, coordinate: [number, number]) => {
+      const nums = '123456789';
 
-const Board: FC<BoardProps> = ({board}) => {
-  const backgroundColorConfig = animatedValue.interpolate({
-    inputRange: increaseDouble(1, 2),
-    outputRange: repeatRandomColors(6),
-  });
-
-  const startBackgroundColorAnimation = () => {
-    Animated.loop(
-      Animated.timing(animatedValue, {
-        toValue: 1,
-        duration: 15000,
-        useNativeDriver: false,
-      }),
-    ).start();
-  };
-
-  useEffect(() => {
-    startBackgroundColorAnimation();
-  }, []);
-
-  useEffect(() => {
-    startBackgroundColorAnimation();
-  }, [board]);
-
-  const handleNumberChange = (text: string, coordinate: any) => {
-    const nums = '123456789';
-
-    switch (text) {
-      case ' ':
-        Alert.alert('Please enter a number between 1-9!');
-        break;
-
-      case '0':
-        Alert.alert("You can't enter 0 or zero!");
-        break;
-
-      default:
-        if (text.length > 1) {
+      switch (text) {
+        case ' ':
           Alert.alert('Please enter a number between 1-9!');
-        } else if (!nums.includes(text)) {
-          Alert.prompt('Please enter number type only!');
-        } else {
-          const boardToChange = [...board];
-          boardToChange[coordinate[0]][coordinate[1]].value = Number(text);
-        }
-        break;
-    }
-  };
+          break;
+
+        case '0':
+          Alert.alert("You can't enter 0 or zero!");
+          break;
+
+        default:
+          if (text.length > 1) {
+            Alert.alert('Please enter a number between 1-9!');
+          } else if (!nums.includes(text)) {
+            Alert.prompt('Please enter number type only!');
+          } else {
+            onChange(
+              update(board, {
+                [coordinate[0]]: {
+                  [coordinate[1]]: {
+                    value: {
+                      $set: Number(text),
+                    },
+                  },
+                },
+              }),
+            );
+          }
+          break;
+      }
+
+      Keyboard.dismiss();
+    },
+    [board, onChange],
+  );
 
   const renderBoard = () => {
-    let indexKey = 1;
+    let idxKey = 1;
     const boardContainer = board.map((row, rowIdx) => {
-      indexKey++;
+      idxKey++;
       const columns = row.map((col, colIdx) => {
-        indexKey++;
+        idxKey++;
         if (col.value > 0) {
           return (
-            <Animated.View
-              key={indexKey}
-              style={[{backgroundColor: backgroundColorConfig}]}>
-              <TextInput
-                onChangeText={text =>
-                  handleNumberChange(text, [rowIdx, colIdx])
-                }
-                style={styles.boardItemFilled}
-                value={String(col.value)}
-                keyboardType="number-pad"
-                editable={col.editable}
-              />
-            </Animated.View>
+            <Input
+              key={colIdx}
+              onChangeText={text => handleChange(text, [rowIdx, colIdx])}
+              value={String(col.value)}
+              keyboardType="number-pad"
+              isReadOnly={!col.editable}
+              width={BoardConstant.CellSize}
+              height={BoardConstant.CellSize}
+              fontSize="4xl"
+              textAlign="center"
+              borderWidth="0"
+              borderRadius="none"
+              borderRightWidth="1"
+              borderTopWidth="1"
+            />
           );
         } else {
           return (
-            <TextInput
-              key={indexKey}
-              onChangeText={text => handleNumberChange(text, [rowIdx, colIdx])}
-              style={styles.boardItem}
+            <Input
+              key={colIdx}
+              onChangeText={text => handleChange(text, [rowIdx, colIdx])}
               keyboardType="number-pad"
-              editable={col.editable}
+              isReadOnly={!col.editable}
+              width={BoardConstant.CellSize}
+              height={BoardConstant.CellSize}
+              fontSize="4xl"
+              textAlign="center"
+              borderWidth="0"
+              borderRadius="none"
+              borderRightWidth="1"
+              borderTopWidth="1"
             />
           );
         }
       });
 
       return (
-        <View key={indexKey} style={styles.boardContainer}>
+        <HStack key={idxKey} space="0">
           {columns}
-        </View>
+        </HStack>
       );
     });
-    return <View style={styles.mainContainer}>{boardContainer}</View>;
+
+    return boardContainer;
   };
 
-  return <View>{renderBoard()}</View>;
+  return (
+    <VStack space="0" justifyContent="center" alignItems="center">
+      {renderBoard()}
+    </VStack>
+  );
 };
 
-export default Board;
-
-const styles = StyleSheet.create({
-  boardItem: {
-    width: 40,
-    height: 40,
-    fontSize: 20,
-    borderColor: 'grey',
-    borderWidth: 1,
-    textAlign: 'center',
-  },
-  boardItemFilled: {
-    width: 40,
-    height: 40,
-    fontSize: 20,
-    color: 'white',
-    borderColor: 'grey',
-    borderWidth: 1,
-    textAlign: 'center',
-  },
-  boardContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignContent: 'center',
-  },
-  mainContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignContent: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 20,
-    borderRadius: 8,
-  },
-});
+export default memo(Board);

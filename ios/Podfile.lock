@@ -302,6 +302,8 @@ PODS:
   - React-jsinspector (0.70.4)
   - React-logger (0.70.4):
     - glog
+  - react-native-background-timer (2.4.1):
+    - React-Core
   - react-native-flipper (0.173.0):
     - React-Core
   - react-native-flipper-performance-plugin (0.3.1):
@@ -309,7 +311,7 @@ PODS:
     - react-native-flipper-performance-plugin/FBDefines (= 0.3.1)
   - react-native-flipper-performance-plugin/FBDefines (0.3.1):
     - React-Core
-  - react-native-pager-view (6.0.2):
+  - react-native-pager-view (6.1.0):
     - React-Core
   - react-native-safe-area-context (3.3.2):
     - React-Core
@@ -440,6 +442,7 @@ DEPENDENCIES:
   - React-jsiexecutor (from `../node_modules/react-native/ReactCommon/jsiexecutor`)
   - React-jsinspector (from `../node_modules/react-native/ReactCommon/jsinspector`)
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
+  - react-native-background-timer (from `../node_modules/react-native-background-timer`)
   - react-native-flipper (from `../node_modules/react-native-flipper`)
   - react-native-flipper-performance-plugin (from `../node_modules/react-native-flipper-performance-plugin`)
   - react-native-pager-view (from `../node_modules/react-native-pager-view`)
@@ -523,6 +526,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/jsinspector"
   React-logger:
     :path: "../node_modules/react-native/ReactCommon/logger"
+  react-native-background-timer:
+    :path: "../node_modules/react-native-background-timer"
   react-native-flipper:
     :path: "../node_modules/react-native-flipper"
   react-native-flipper-performance-plugin:
@@ -601,9 +606,10 @@ SPEC CHECKSUMS:
   React-jsiexecutor: 4a893fc8f683b91befcaf56c44ad8be4506b6828
   React-jsinspector: 1d5a9e84e419a57cabc23249aec3d837d1b03a80
   React-logger: f8071ad48248781d5afdb8a07f778758529d3019
+  react-native-background-timer: 17ea5e06803401a379ebf1f20505b793ac44d0fe
   react-native-flipper: 64998cd1c415826bf49ef391e5bc0adcb7dcb77a
   react-native-flipper-performance-plugin: 2b873b68da3e368afeaf29c9c7a8c2b0ff908c4f
-  react-native-pager-view: 592421df0259bf7a7a4fe85b74c24f3f39905605
+  react-native-pager-view: 7abf89f9834d9a4021b2fb6a5ef2abff570b46fb
   react-native-safe-area-context: 584dc04881deb49474363f3be89e4ca0e854c057
   React-perflogger: 5e41b01b35d97cc1b0ea177181eb33b5c77623b6
   React-RCTActionSheet: 48949f30b24200c82f3dd27847513be34e06a3ae

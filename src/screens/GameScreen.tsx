@@ -1,228 +1,153 @@
-import React, {FC} from 'react';
+import React, {
+  FC,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from 'react';
 import {
-  View,
+  useTheme,
+  Spinner,
+  Center,
+  VStack,
+  HStack,
   Text,
-  StyleSheet,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  Keyboard,
-} from 'react-native';
+  IconButton,
+  Button,
+  Modal,
+} from 'native-base';
+import {Timer} from 'react-native-element-timer';
+import update from 'immutability-helper';
+
+// Constants
+import {GameStatus} from '@/constants';
 
 // Hooks
-import {useRoute, useDispatch, useSelector} from '@/hooks';
+import {useNavigation, useRoute, useDispatch, useSelector} from '@/hooks';
+
+// Redux
+import {setCurrent} from '@/redux/slices';
+import {useValidateBoardMutation} from '@/redux/queries';
 
 // Components
-import {Board} from '@/components';
+import {Icon} from '@/components/shared';
+import {BoardProps, Board} from '@/components';
 
 // Utils
 import {capitalize} from '@/utils';
 
 const GameScreen: FC = () => {
+  const navigation = useNavigation();
   const route = useRoute<'Game'>();
+  const theme = useTheme();
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const timerRef = useRef(null);
   const dispatch = useDispatch();
   const state = useSelector(s => s.game);
+  const [validateBoard, validateBoardProcess] = useValidateBoardMutation();
 
-  // useEffect(() => {
-  //   if (playerScore !== 0) {
-  //     navigation.navigate('Finish');
-  //   }
-  // }, [navigation, playerScore]);
+  const spinner = useMemo(() => <Spinner />, []);
 
-  const renderBoardScreen = () => {
-    return (
-      <>
-        <View style={customStyles.playerDataContainer}>
-          <View style={customStyles.playerDataItem}>
-            <View style={customStyles.difficultyStatusContainer}>
-              <Text style={customStyles.difficultyStatus}>Difficulty</Text>
-              <Text style={customStyles.difficultyStatus}>
-                {capitalize(route.params.game.difficulty)}
-              </Text>
-            </View>
-          </View>
-        </View>
+  useEffect(() => {
+    if (validateBoardProcess.isLoading) {
+      navigation.setOptions({
+        headerRight: () => spinner,
+      });
+    } else {
+      navigation.setOptions({
+        headerRight: null,
+      });
+    }
+  }, [navigation, validateBoardProcess, spinner]);
 
-        <View>
-          <Board board={route.params.game.board} />
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={customStyles.buttonGroup}>
-              <View style={customStyles.difficultyPicker}>
-                <Text>Pick a difficulty:</Text>
-                <TouchableOpacity style={customStyles.difficultyButtonEasy}>
-                  <Text style={customStyles.difficultyText}>Easy</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={customStyles.difficultyButtonMedium}>
-                  <Text style={customStyles.difficultyText}>Medium</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={customStyles.difficultyButtonHard}>
-                  <Text style={customStyles.difficultyText}>Hard</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={customStyles.boardAction}>
-                <TouchableOpacity style={customStyles.button}>
-                  <Text style={customStyles.buttonText}>Apply</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={customStyles.button}>
-                  <Text style={customStyles.buttonText}>Give Up!</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={customStyles.button}>
-                  <Text style={customStyles.buttonText}>Reset</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={customStyles.boardAction}>
-                <TouchableOpacity style={customStyles.runAwayButton}>
-                  <Text style={customStyles.runAwayText}>RUN AWAY??</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </>
-    );
-  };
+  const handlePause = useCallback(() => {
+    timerRef.current.pause();
+    setIsPaused(true);
+  }, []);
 
-  // const renderLoading = () => {
-  //   if (Platform.OS !== 'ios') {
-  //     return <ActivityIndicator size="large" color="#0000ff" />;
-  //   } else {
-  //     return (
-  //       <LottieView
-  //         autoPlay
-  //         loop
-  //         style={customStyles.lottieLoading}
-  //         source={require('../../assets/island.json')}
-  //       />
-  //       <View />
-  //     );
-  //   }
-  // };
+  const handleResume = useCallback(() => {
+    timerRef.current.resume();
+    setIsPaused(false);
+  }, []);
 
-  return <View style={customStyles.boardContainer}>{renderBoardScreen()}</View>;
+  const handleChange = useCallback<BoardProps['onChange']>(
+    async board => {
+      const {status} = await validateBoard({
+        board,
+      }).unwrap();
+
+      if (status === GameStatus.UNSOLVED) {
+        dispatch(
+          setCurrent(
+            update(state.current, {
+              board: {
+                $set: board,
+              },
+            }),
+          ),
+        );
+      }
+    },
+    [validateBoard, dispatch, state],
+  );
+
+  return (
+    <>
+      <VStack space="2" paddingX="6" paddingY={2}>
+        <HStack justifyContent="space-between" alignItems="center">
+          <HStack width="1/3" justifyContent="flex-start">
+            <Text fontSize="md">
+              {capitalize(route.params.game.difficulty)}
+            </Text>
+          </HStack>
+          <HStack width="1/3" justifyContent="center">
+            <IconButton
+              icon={<Icon name="pause" sharp />}
+              onPress={handlePause}
+            />
+          </HStack>
+          <HStack width="1/3" justifyContent="flex-end">
+            <Timer
+              ref={timerRef}
+              formatTime="hh:mm:ss"
+              autoStart
+              textStyle={{
+                fontSize: theme.fontSizes.md,
+              }}
+            />
+          </HStack>
+        </HStack>
+
+        <Board board={route.params.game.board} onChange={handleChange} />
+      </VStack>
+
+      {/* Pause Modal */}
+      <Modal isOpen={isPaused}>
+        <Modal.Content>
+          <Modal.Body>
+            <Center>
+              <VStack
+                space={8}
+                justifyContent="space-between"
+                alignItems="center">
+                <Text bold fontSize="2xl">
+                  Paused
+                </Text>
+
+                <Button
+                  size="lg"
+                  startIcon={<Icon name="play" sharp />}
+                  onPress={handleResume}>
+                  Resume
+                </Button>
+              </VStack>
+            </Center>
+          </Modal.Body>
+        </Modal.Content>
+      </Modal>
+    </>
+  );
 };
 
 export default GameScreen;
-
-const customStyles = StyleSheet.create({
-  boardContainer: {
-    justifyContent: 'center',
-    alignContent: 'center',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  playerDataContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignContent: 'center',
-    alignItems: 'baseline',
-  },
-  playerDataItem: {
-    flex: 3,
-    justifyContent: 'center',
-    alignContent: 'center',
-    alignItems: 'center',
-    margin: 10,
-  },
-  playerGreeterText: {
-    fontWeight: 'bold',
-    fontSize: 25,
-  },
-  sudokuTimerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignContent: 'center',
-    alignItems: 'baseline',
-  },
-  timeRemainingText: {
-    marginVertical: 5,
-  },
-  countdown: {
-    marginVertical: 5,
-  },
-  playerDetails: {
-    alignItems: 'flex-start',
-  },
-  totalScoreTitle: {
-    borderBottomColor: 'black',
-    borderBottomWidth: 1,
-  },
-  totalScore: {
-    marginVertical: 3,
-    borderTopWidth: 2,
-    borderTopColor: 'pink',
-  },
-  lottieLoading: {
-    height: 200,
-    width: 200,
-  },
-  buttonGroup: {
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    margin: 10,
-  },
-  button: {
-    backgroundColor: 'pink',
-    padding: 12,
-    margin: 10,
-    borderRadius: 8,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 20,
-  },
-  difficultyPicker: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-    padding: 10,
-    margin: 10,
-  },
-  difficultyButtonEasy: {
-    backgroundColor: 'green',
-    padding: 8,
-    margin: 8,
-    borderRadius: 8,
-  },
-  difficultyButtonMedium: {
-    backgroundColor: 'orange',
-    padding: 8,
-    margin: 8,
-    borderRadius: 8,
-  },
-  difficultyButtonHard: {
-    backgroundColor: 'red',
-    padding: 8,
-    margin: 8,
-    borderRadius: 8,
-  },
-  difficultyText: {
-    color: 'white',
-  },
-  boardAction: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'baseline',
-  },
-  runAwayButton: {
-    padding: 10,
-    backgroundColor: 'orange',
-    borderRadius: 8,
-  },
-  runAwayText: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  totalScoreContainer: {
-    alignItems: 'center',
-    borderWidth: 2,
-    borderRadius: 8,
-    padding: 8,
-  },
-  difficultyStatusContainer: {
-    alignItems: 'center',
-  },
-  difficultyStatus: {
-    marginVertical: 3,
-  },
-});
