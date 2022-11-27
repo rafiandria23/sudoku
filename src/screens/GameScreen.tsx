@@ -20,11 +20,14 @@ import {
 import {Timer} from 'react-native-element-timer';
 import update from 'immutability-helper';
 
+// Types
+import type {Game} from '@/types';
+
 // Constants
 import {GameStatus} from '@/constants';
 
 // Hooks
-import {useNavigation, useRoute, useDispatch, useSelector} from '@/hooks';
+import {useNavigation, useRoute, useDispatch} from '@/hooks';
 
 // Redux
 import {setCurrent} from '@/redux/slices';
@@ -41,55 +44,85 @@ const GameScreen: FC = () => {
   const navigation = useNavigation();
   const route = useRoute<'Game'>();
   const theme = useTheme();
-  const [isPaused, setIsPaused] = useState<boolean>(false);
-  const timerRef = useRef(null);
   const dispatch = useDispatch();
-  const state = useSelector(s => s.game);
+  const timerRef = useRef(null);
   const [validateBoard, validateBoardProcess] = useValidateBoardMutation();
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [time, setTime] = useState<Game['time']>(0);
+  const [board, setBoard] = useState<Game['board']>([]);
 
   const spinner = useMemo(() => <Spinner />, []);
+  const game = useMemo(() => route.params.game, [route]);
+
+  useEffect(() => {
+    setTime(game.time);
+    setBoard(game.board);
+    timerRef.current.start();
+  }, [timerRef, game]);
+
+  const handleSave = useCallback(() => {
+    timerRef.current.stop();
+
+    if (game.status === GameStatus.UNSOLVED) {
+      dispatch(
+        setCurrent(
+          update(game, {
+            board: {
+              $set: board,
+            },
+            time: {
+              $set: time,
+            },
+          }),
+        ),
+      );
+    }
+  }, [timerRef, dispatch, game, board, time]);
+
+  useEffect(() => {
+    navigation.addListener('beforeRemove', handleSave);
+
+    return () => {
+      navigation.removeListener('beforeRemove', handleSave);
+    };
+  }, [navigation, handleSave]);
 
   useEffect(() => {
     if (validateBoardProcess.isLoading) {
       navigation.setOptions({
         headerRight: () => spinner,
       });
-    } else {
-      navigation.setOptions({
-        headerRight: null,
-      });
+      return;
     }
+
+    navigation.setOptions({
+      headerRight: null,
+    });
   }, [navigation, validateBoardProcess, spinner]);
 
   const handlePause = useCallback(() => {
     timerRef.current.pause();
     setIsPaused(true);
-  }, []);
-
+  }, [timerRef]);
   const handleResume = useCallback(() => {
     timerRef.current.resume();
     setIsPaused(false);
+  }, [timerRef]);
+  const handleTime = useCallback((seconds: number) => {
+    setTime(seconds);
   }, []);
 
   const handleChange = useCallback<BoardProps['onChange']>(
-    async board => {
+    async changedBoard => {
       const {status} = await validateBoard({
-        board,
+        board: changedBoard,
       }).unwrap();
 
       if (status === GameStatus.UNSOLVED) {
-        dispatch(
-          setCurrent(
-            update(state.current, {
-              board: {
-                $set: board,
-              },
-            }),
-          ),
-        );
+        setBoard(changedBoard);
       }
     },
-    [validateBoard, dispatch, state],
+    [validateBoard],
   );
 
   return (
@@ -97,9 +130,7 @@ const GameScreen: FC = () => {
       <VStack space="2" paddingX="6" paddingY={2}>
         <HStack justifyContent="space-between" alignItems="center">
           <HStack width="1/3" justifyContent="flex-start">
-            <Text fontSize="md">
-              {capitalize(route.params.game.difficulty)}
-            </Text>
+            <Text fontSize="md">{capitalize(game.difficulty)}</Text>
           </HStack>
           <HStack width="1/3" justifyContent="center">
             <IconButton
@@ -110,8 +141,9 @@ const GameScreen: FC = () => {
           <HStack width="1/3" justifyContent="flex-end">
             <Timer
               ref={timerRef}
+              initialSeconds={game.time}
+              onTimes={handleTime}
               formatTime="hh:mm:ss"
-              autoStart
               textStyle={{
                 fontSize: theme.fontSizes.md,
               }}
@@ -119,7 +151,7 @@ const GameScreen: FC = () => {
           </HStack>
         </HStack>
 
-        <Board board={route.params.game.board} onChange={handleChange} />
+        <Board board={board} onChange={handleChange} />
       </VStack>
 
       {/* Pause Modal */}

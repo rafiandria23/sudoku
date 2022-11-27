@@ -3,11 +3,12 @@ import {GameDifficulty, GameStatus} from '@/constants';
 
 export interface Game {
   difficulty: GameDifficulty;
+  status: GameStatus;
+  time: number;
   board: {
     editable: boolean;
     value: number;
   }[][];
-  status: GameStatus;
 }
 
 export interface GetBoardRequestParams {

@@ -21,15 +21,19 @@ const PlayScreen: FC = () => {
   const state = useSelector(s => s.game);
   const [getBoard, getBoardProcess] = useLazyGetBoardQuery();
 
-  const handleNavigateNewGame = useCallback(async () => {
-    const {data} = await getBoard({
-      difficulty: GameDifficulty.EASY,
-    });
+  const handleNewGame = useCallback(async () => {
+    const data = await getBoard(
+      {
+        difficulty: GameDifficulty.EASY,
+      },
+      false,
+    ).unwrap();
 
     const newGame: Game = {
       difficulty: GameDifficulty.EASY,
       board: data.board,
       status: GameStatus.UNSOLVED,
+      time: 0,
     };
 
     dispatch(setCurrent(newGame));
@@ -37,9 +41,9 @@ const PlayScreen: FC = () => {
     navigation.push('Game', {
       game: newGame,
     });
-  }, [navigation, dispatch, getBoard]);
+  }, [getBoard, dispatch, navigation]);
 
-  const handleNavigateContinueGame = useCallback(() => {
+  const handleContinueGame = useCallback(() => {
     navigation.push('Game', {
       game: state.current,
     });
@@ -50,19 +54,25 @@ const PlayScreen: FC = () => {
       <Center>
         <VStack space={8} paddingBottom={16}>
           <Spacer />
+
           {state.current && (
             <Button
               size="lg"
               colorScheme="secondary"
-              onPress={handleNavigateContinueGame}>
+              isDisabled={
+                getBoardProcess.isLoading || getBoardProcess.isFetching
+              }
+              onPress={handleContinueGame}>
               Continue
+              {`${state.current.time} Seconds`}
             </Button>
           )}
+
           <Button
             size="lg"
             colorScheme="primary"
-            isLoading={getBoardProcess.isLoading}
-            onPress={handleNavigateNewGame}>
+            isLoading={getBoardProcess.isLoading || getBoardProcess.isFetching}
+            onPress={handleNewGame}>
             New Game
           </Button>
         </VStack>

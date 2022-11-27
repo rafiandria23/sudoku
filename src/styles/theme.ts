@@ -180,6 +180,12 @@ export const nativeBaseTheme = extendTheme({
         return props;
       },
     },
+    IconButton: {
+      baseStyle(props) {
+        props.rounded = 'full';
+        return props;
+      },
+    },
   },
   config: {
     useSystemColorMode: true,
